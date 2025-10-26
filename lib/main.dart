@@ -41,7 +41,7 @@ class ProtoApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.brown,
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF5E6D3), // Cream/beige background
+        scaffoldBackgroundColor: const Color(0xFFFAF8F3), // 연한 아이보리 배경
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -126,25 +126,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('하루 일과', style: TextStyle(color: Color(0xFFF5E6D3), fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF8B6B47), // Brown header
-        centerTitle: true,
+        backgroundColor: const Color(0xFFFAF8F3), // 연한 아이보리 배경
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline, color: Color(0xFFF5E6D3)),
-            onPressed: () {},
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF8B6B47), size: 28),
+          onPressed: () {
+            // 메뉴 기능은 나중에 구현
+          },
+        ),
       ),
-      backgroundColor: const Color(0xFFF5E6D3), // Cream background
+      backgroundColor: const Color(0xFFFAF8F3), // 연한 아이보리 배경
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. 왼쪽 1/3: 스크롤 가능한 타임라인 & 블록 영역
           Container(
             width: leftWidth,
-            color: const Color(0xFFF5E6D3),
+            color: const Color(0xFFFAF8F3),
             child: Stack(
               children: [
                 // 스크롤 가능한 타임라인
@@ -203,7 +201,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Container(
             width: rightWidth,
             height: screenHeight,
-            color: const Color(0xFFF5E6D3),
+            color: const Color(0xFFFAF8F3),
             child: Column(
               children: [
                 // 오른쪽 상단: 루틴 체크리스트
@@ -212,7 +210,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5E6D3),
+                      color: const Color(0xFFFAF8F3),
                       border: Border(
                         left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
                       ),
@@ -262,7 +260,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5E6D3),
+                      color: const Color(0xFFFAF8F3),
                       border: Border(
                         top: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
                         left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
@@ -484,7 +482,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFFF5E6D3),
+          backgroundColor: const Color(0xFFFAF8F3),
           title: const Text('루틴 수정', style: TextStyle(color: Color(0xFF6B4E3D))),
           content: TextField(
             controller: controller,
@@ -526,7 +524,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFFF5E6D3),
+          backgroundColor: const Color(0xFFFAF8F3),
           title: const Text('루틴 삭제', style: TextStyle(color: Color(0xFF6B4E3D))),
           content: Text(
             '${_routines[index]['text']} 항목을 삭제하시겠습니까?',
@@ -562,7 +560,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFFF5E6D3),
+          backgroundColor: const Color(0xFFFAF8F3),
           title: const Text('루틴 추가', style: TextStyle(color: Color(0xFF6B4E3D))),
           content: TextField(
             controller: controller,
@@ -646,7 +644,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Text(
                     entry.category.name,
                     style: const TextStyle(
-                      color: Color(0xFFF5E6D3),
+                      color: Color(0xFFFAF8F3),
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
                     ),
@@ -656,7 +654,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 if (_isEditMode && !isPreview)
                   const Icon(
                     Icons.delete_outline,
-                    color: Color(0xFFF5E6D3),
+                    color: Color(0xFFFAF8F3),
                     size: 16,
                   ),
               ],
@@ -673,7 +671,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFFF5E6D3),
+          backgroundColor: const Color(0xFFFAF8F3),
           title: const Text('일정 삭제', style: TextStyle(color: Color(0xFF6B4E3D))),
           content: Text(
             '${entry.category.name} 일정을 삭제하시겠습니까?',
@@ -788,7 +786,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _showCategoryPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFFF5E6D3),
+      backgroundColor: const Color(0xFFFAF8F3),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
