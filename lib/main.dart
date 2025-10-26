@@ -37,11 +37,11 @@ class ProtoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'P형 투두앱 프로토타입',
+      title: '하루 일과',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Colors.black,
+        primarySwatch: Colors.brown,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF5E6D3), // Cream/beige background
       ),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -82,20 +82,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final double _hourHeight = 50.0;
   /// 2. 시간 표시 영역의 너비. 40으로 고정 (매우 얇게)
   final double _timelineWidth = 40.0;
-  /// 3. 우측 체크리스트 영역 너비
-  final double _checklistWidth = 130.0;
 
   /// 저장된 모든 일정
   final List<ScheduleEntry> _schedules = [];
 
-  /// 기본으로 제공할 카테고리 목록
+  /// 기본으로 제공할 카테고리 목록 (따뜻한 톤으로 변경)
   final List<ActivityCategory> _categories = [
-    ActivityCategory(name: '업무', icon: Icons.work, color: Colors.blue.shade700),
-    ActivityCategory(name: '공부', icon: Icons.book, color: Colors.green.shade700),
-    ActivityCategory(name: '식사', icon: Icons.restaurant, color: Colors.orange.shade700),
-    ActivityCategory(name: '운동', icon: Icons.fitness_center, color: Colors.red.shade700),
-    ActivityCategory(name: '휴식', icon: Icons.self_improvement, color: Colors.purple.shade700),
-    ActivityCategory(name: '게임', icon: Icons.gamepad, color: Colors.teal.shade700),
+    ActivityCategory(name: '업무', icon: Icons.work, color: const Color(0xFF8B6B47)),
+    ActivityCategory(name: '공부', icon: Icons.book, color: const Color(0xFFB4926F)),
+    ActivityCategory(name: '식사', icon: Icons.restaurant, color: const Color(0xFFD4A574)),
+    ActivityCategory(name: '운동', icon: Icons.fitness_center, color: const Color(0xFFA67B5B)),
+    ActivityCategory(name: '휴식', icon: Icons.self_improvement, color: const Color(0xFFC9A88A)),
+    ActivityCategory(name: '게임', icon: Icons.gamepad, color: const Color(0xFF9E7E5E)),
+  ];
+
+  /// 루틴 체크리스트
+  final List<Map<String, dynamic>> _routines = [
+    {'text': '기상 후 씻기', 'checked': false},
+    {'text': '자기 전 씻기', 'checked': false},
+    {'text': '흑곰이 산책', 'checked': false},
+    {'text': '배달 x', 'checked': false},
   ];
 
   /// 드래그 시작 시간
@@ -110,17 +116,32 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final leftWidth = screenWidth / 3; // 왼쪽 1/3
+    final rightWidth = screenWidth * 2 / 3; // 오른쪽 2/3
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('오늘 뭐했지? (v3)'),
-        backgroundColor: Colors.grey.shade900,
+        title: const Text('하루 일과', style: TextStyle(color: Color(0xFFF5E6D3), fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF8B6B47), // Brown header
         centerTitle: true,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Color(0xFFF5E6D3)),
+            onPressed: () {},
+          ),
+        ],
       ),
+      backgroundColor: const Color(0xFFF5E6D3), // Cream background
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. 좌측 + 중앙: 스크롤 가능한 타임라인 & 블록 영역
-          Expanded(
+          // 1. 왼쪽 1/3: 스크롤 가능한 타임라인 & 블록 영역
+          Container(
+            width: leftWidth,
+            color: const Color(0xFFF5E6D3),
             child: SingleChildScrollView(
               child: SizedBox(
                 // 24시간 * 시간당 높이 = 총 스크롤 높이
@@ -129,10 +150,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   children: [
                     // 1. 배경 (시간, 점선) -> CustomPaint
                     CustomPaint(
-                      size: Size(double.infinity, 24 * _hourHeight),
+                      size: Size(leftWidth, 24 * _hourHeight),
                       painter: TimelinePainter(
                         hourHeight: _hourHeight,
-                        timelineWidth: _timelineWidth, // 얇은 시간표 너비 전달
+                        timelineWidth: _timelineWidth,
                         context: context,
                       ),
                     ),
@@ -151,26 +172,70 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
           ),
-          // 2. 우측: 고정된 체크리스트 영역
+          // 2. 오른쪽 2/3 영역
           Container(
-            width: _checklistWidth, // PDF처럼 우측에 고정 너비
-            height: MediaQuery.of(context).size.height,
-            color: Colors.grey.shade900.withOpacity(0.5),
-            padding: const EdgeInsets.all(12.0),
+            width: rightWidth,
+            height: screenHeight,
+            color: const Color(0xFFF5E6D3),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '오늘의 루틴',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                // 오른쪽 상단: 루틴 체크리스트
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5E6D3),
+                      border: Border(
+                        left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '오늘의 루틴',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF6B4E3D),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: _routines.length,
+                            itemBuilder: (context, index) {
+                              return _buildRoutineCheckItem(index);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildRoutineCheckItem('기상 후 씻기'),
-                _buildRoutineCheckItem('자기 전 씻기'),
-                _buildRoutineCheckItem('흑곰이 산책'),
-                _buildRoutineCheckItem('배달 x'),
+                // 오른쪽 하단: 빈 공간 (나중에 사용)
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5E6D3),
+                      border: Border(
+                        top: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
+                        left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        '',
+                        style: TextStyle(color: Color(0xFF8B6B47)),
+                      ),
+                    ),
+                  ),
+                ),
               ],
-            )
+            ),
           ),
         ],
       ),
@@ -178,24 +243,86 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   // --- 위젯 빌더 ---
-  
-  /// 우측 루틴 체크 아이템 (임시)
-  Widget _buildRoutineCheckItem(String title) {
+
+  /// 우측 루틴 체크 아이템 (편집 가능)
+  Widget _buildRoutineCheckItem(int index) {
+    final routine = _routines[index];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          Icon(Icons.check_box_outline_blank, color: Colors.grey.shade400, size: 20),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _routines[index]['checked'] = !routine['checked'];
+              });
+            },
+            child: Icon(
+              routine['checked'] ? Icons.check_box : Icons.check_box_outline_blank,
+              color: const Color(0xFF8B6B47),
+              size: 22,
+            ),
+          ),
           const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              title,
-              style: TextStyle(color: Colors.grey.shade300, fontSize: 12),
-              overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _editRoutineText(index),
+              child: Text(
+                routine['text'],
+                style: TextStyle(
+                  color: const Color(0xFF6B4E3D),
+                  fontSize: 14,
+                  decoration: routine['checked'] ? TextDecoration.lineThrough : null,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 루틴 텍스트 수정 다이얼로그
+  void _editRoutineText(int index) {
+    final controller = TextEditingController(text: _routines[index]['text']);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5E6D3),
+          title: const Text('루틴 수정', style: TextStyle(color: Color(0xFF6B4E3D))),
+          content: TextField(
+            controller: controller,
+            style: const TextStyle(color: Color(0xFF6B4E3D)),
+            decoration: InputDecoration(
+              hintText: '루틴 내용을 입력하세요',
+              hintStyle: TextStyle(color: const Color(0xFF8B6B47).withValues(alpha: 0.5)),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3)),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF8B6B47)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF8B6B47))),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _routines[index]['text'] = controller.text;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('저장', style: TextStyle(color: Color(0xFF8B6B47), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -227,16 +354,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: entry.category.color.withOpacity(isPreview ? 0.5 : 0.8),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: entry.category.color, width: 1),
+            color: entry.category.color.withValues(alpha: isPreview ? 0.5 : 0.8),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: entry.category.color, width: 1.5),
           ),
           child: Text(
             entry.category.name,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFFF5E6D3),
               fontWeight: FontWeight.bold,
-              fontSize: 10, 
+              fontSize: 11,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -327,24 +454,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _showCategoryPicker();
   }
 
-  /// 카테고리 선택 바텀 시트 (이전과 동일)
+  /// 카테고리 선택 바텀 시트
   void _showCategoryPicker() {
-    // ... (이전 코드와 동일, 생략 없이 전체 복사하세요) ...
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.grey.shade900,
+      backgroundColor: const Color(0xFFF5E6D3),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 '무엇을 하셨나요?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6B4E3D),
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Wrap(
                 spacing: 12.0,
                 runSpacing: 12.0,
@@ -357,26 +490,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           endTime: _previewEntry!.endTime,
                           category: category,
                         ));
-                        _previewEntry = null; 
+                        _previewEntry = null;
                       });
-                      Navigator.pop(context); 
+                      Navigator.pop(context);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: category.color.withOpacity(0.2),
+                        color: category.color.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: category.color, width: 1),
+                        border: Border.all(color: category.color, width: 2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(category.icon, color: category.color, size: 20),
+                          Icon(category.icon, color: category.color, size: 22),
                           const SizedBox(width: 8),
                           Text(
                             category.name,
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              color: category.color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ],
                       ),
@@ -384,13 +521,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         );
       },
     ).whenComplete(() {
       setState(() {
-        _previewEntry = null; 
+        _previewEntry = null;
       });
     });
   }
@@ -412,20 +550,21 @@ class TimelinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = Colors.grey.shade800
+      ..color = const Color(0xFF8B6B47).withValues(alpha: 0.2)
       ..strokeWidth = 0.5;
 
     final dotPaint = Paint()
-      ..color = Colors.grey.shade700;
+      ..color = const Color(0xFF8B6B47).withValues(alpha: 0.4);
 
     final textPainter = TextPainter(
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     );
 
-    final textStyle = TextStyle(
-      color: Colors.grey.shade500,
+    final textStyle = const TextStyle(
+      color: Color(0xFF8B6B47),
       fontSize: 10,
+      fontWeight: FontWeight.w500,
     );
 
     for (int i = 0; i < 24; i++) {
