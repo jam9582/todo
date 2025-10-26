@@ -112,6 +112,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   /// 드래그 중에 사용자에게 보여줄 임시 블록
   ScheduleEntry? _previewEntry;
 
+  /// 편집 모드 상태 (true일 때만 드래그로 일정 추가 가능)
+  bool _isEditMode = false;
+
   // --- 빌드 메서드 ---
 
   @override
@@ -142,34 +145,58 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Container(
             width: leftWidth,
             color: const Color(0xFFF5E6D3),
-            child: SingleChildScrollView(
-              child: SizedBox(
-                // 24시간 * 시간당 높이 = 총 스크롤 높이
-                height: 24 * _hourHeight,
-                child: Stack(
-                  children: [
-                    // 1. 배경 (시간, 점선) -> CustomPaint
-                    CustomPaint(
-                      size: Size(leftWidth, 24 * _hourHeight),
-                      painter: TimelinePainter(
-                        hourHeight: _hourHeight,
-                        timelineWidth: _timelineWidth,
-                        context: context,
-                      ),
+            child: Stack(
+              children: [
+                // 스크롤 가능한 타임라인
+                SingleChildScrollView(
+                  child: SizedBox(
+                    // 24시간 * 시간당 높이 = 총 스크롤 높이
+                    height: 24 * _hourHeight,
+                    child: Stack(
+                      children: [
+                        // 1. 배경 (시간, 점선) -> CustomPaint
+                        CustomPaint(
+                          size: Size(leftWidth, 24 * _hourHeight),
+                          painter: TimelinePainter(
+                            hourHeight: _hourHeight,
+                            timelineWidth: _timelineWidth,
+                            context: context,
+                          ),
+                        ),
+
+                        // 2. 저장된 일정 블록들
+                        ..._schedules.map(_buildScheduleBlock),
+
+                        // 3. 드래그 중인 임시 블록
+                        if (_previewEntry != null)
+                          _buildScheduleBlock(_previewEntry!, isPreview: true),
+
+                        // 4. 드래그를 감지할 제스처 영역 (편집 모드일 때만)
+                        if (_isEditMode) _buildGestureDetector(),
+                      ],
                     ),
-
-                    // 2. 저장된 일정 블록들
-                    ..._schedules.map(_buildScheduleBlock),
-
-                    // 3. 드래그 중인 임시 블록
-                    if (_previewEntry != null)
-                      _buildScheduleBlock(_previewEntry!, isPreview: true),
-
-                    // 4. 드래그를 감지할 제스처 영역
-                    _buildGestureDetector(),
-                  ],
+                  ),
                 ),
-              ),
+                // + 버튼 (플로팅)
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        _isEditMode = !_isEditMode;
+                      });
+                    },
+                    backgroundColor: _isEditMode
+                        ? const Color(0xFFD4A574)
+                        : const Color(0xFF8B6B47),
+                    child: Icon(
+                      _isEditMode ? Icons.check : Icons.add,
+                      color: const Color(0xFFF5E6D3),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // 2. 오른쪽 2/3 영역
@@ -214,7 +241,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
                 ),
-                // 오른쪽 하단: 빈 공간 (나중에 사용)
+                // 오른쪽 하단: 카테고리별 시간 통계 (편집 모드일 때만 표시)
                 Expanded(
                   flex: 1,
                   child: Container(
@@ -226,12 +253,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
                       ),
                     ),
-                    child: const Center(
-                      child: Text(
-                        '',
-                        style: TextStyle(color: Color(0xFF8B6B47)),
-                      ),
-                    ),
+                    child: _isEditMode ? _buildStatistics() : const SizedBox.shrink(),
                   ),
                 ),
               ],
@@ -242,7 +264,154 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
+  // --- 로직 메서드 ---
+
+  /// 카테고리별 총 시간(분) 계산
+  Map<String, int> _calculateCategoryTimes() {
+    final Map<String, int> categoryTimes = {};
+
+    for (final schedule in _schedules) {
+      final startMinutes = schedule.startTime.hour * 60 + schedule.startTime.minute;
+      var endMinutes = schedule.endTime.hour * 60 + schedule.endTime.minute;
+      if (schedule.endTime.hour == 0 && schedule.endTime.minute == 0) {
+        endMinutes = 24 * 60;
+      }
+
+      final duration = endMinutes - startMinutes;
+      final categoryName = schedule.category.name;
+
+      categoryTimes[categoryName] = (categoryTimes[categoryName] ?? 0) + duration;
+    }
+
+    return categoryTimes;
+  }
+
+  /// 분을 시간:분 형식으로 변환
+  String _formatMinutes(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (hours > 0) {
+      return '${hours}시간 ${mins}분';
+    } else {
+      return '${mins}분';
+    }
+  }
+
   // --- 위젯 빌더 ---
+
+  /// 카테고리별 시간 통계 위젯
+  Widget _buildStatistics() {
+    final categoryTimes = _calculateCategoryTimes();
+
+    if (categoryTimes.isEmpty) {
+      return const Center(
+        child: Text(
+          '일정을 추가하면\n통계가 표시됩니다',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF8B6B47),
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    // 카테고리별 색상 매핑
+    final categoryColors = {
+      for (var cat in _categories) cat.name: cat
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '오늘의 활동 시간',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF6B4E3D),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ListView(
+            children: categoryTimes.entries.map((entry) {
+              final category = categoryColors[entry.key];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                child: Row(
+                  children: [
+                    // 카테고리 아이콘
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: category!.color.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        category.icon,
+                        size: 18,
+                        color: category.color,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // 카테고리 이름
+                    Expanded(
+                      child: Text(
+                        category.name,
+                        style: TextStyle(
+                          color: category.color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    // 시간
+                    Text(
+                      _formatMinutes(entry.value),
+                      style: TextStyle(
+                        color: category.color,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const Divider(color: Color(0xFF8B6B47)),
+        // 총 시간
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '총 시간',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6B4E3D),
+                ),
+              ),
+              Text(
+                _formatMinutes(
+                  categoryTimes.values.fold(0, (sum, time) => sum + time),
+                ),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8B6B47),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   /// 우측 루틴 체크 아이템 (편집 가능)
   Widget _buildRoutineCheckItem(int index) {
@@ -331,13 +500,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildScheduleBlock(ScheduleEntry entry, {bool isPreview = false}) {
     // 1분당 높이 (0.833...)
     final double minuteHeight = _hourHeight / 60.0;
-    
+
     final double startMinutes = entry.startTime.hour * 60.0 + entry.startTime.minute;
     double endMinutes = entry.endTime.hour * 60.0 + entry.endTime.minute;
     if (entry.endTime.hour == 0 && entry.endTime.minute == 0) {
       endMinutes = 24 * 60.0;
     }
-    
+
     final double top = startMinutes * minuteHeight;
     final double height = (endMinutes - startMinutes) * minuteHeight;
 
@@ -346,29 +515,84 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Positioned(
       top: top,
       // 4. '왼쪽'을 시간표 너비 + 여백으로 설정
-      left: _timelineWidth + 4.0, 
-      right: 4.0, 
+      left: _timelineWidth + 4.0,
+      right: 4.0,
       height: height,
-      child: Opacity(
-        opacity: isPreview ? 0.6 : 1.0,
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: entry.category.color.withValues(alpha: isPreview ? 0.5 : 0.8),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: entry.category.color, width: 1.5),
-          ),
-          child: Text(
-            entry.category.name,
-            style: const TextStyle(
-              color: Color(0xFFF5E6D3),
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
+      child: GestureDetector(
+        onTap: _isEditMode && !isPreview
+            ? () => _deleteSchedule(entry)
+            : null,
+        child: Opacity(
+          opacity: isPreview ? 0.6 : 1.0,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: entry.category.color.withValues(alpha: isPreview ? 0.5 : 0.8),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: entry.category.color,
+                width: _isEditMode && !isPreview ? 2.5 : 1.5,
+              ),
             ),
-            overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    entry.category.name,
+                    style: const TextStyle(
+                      color: Color(0xFFF5E6D3),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_isEditMode && !isPreview)
+                  const Icon(
+                    Icons.delete_outline,
+                    color: Color(0xFFF5E6D3),
+                    size: 16,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 일정 삭제
+  void _deleteSchedule(ScheduleEntry entry) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5E6D3),
+          title: const Text('일정 삭제', style: TextStyle(color: Color(0xFF6B4E3D))),
+          content: Text(
+            '${entry.category.name} 일정을 삭제하시겠습니까?',
+            style: const TextStyle(color: Color(0xFF6B4E3D)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF8B6B47))),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _schedules.remove(entry);
+                });
+                Navigator.pop(context);
+              },
+              child: const Text(
+                '삭제',
+                style: TextStyle(color: Color(0xFFD4A574), fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
