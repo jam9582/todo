@@ -220,13 +220,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '오늘의 루틴',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6B4E3D),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '오늘의 루틴',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF6B4E3D),
+                              ),
+                            ),
+                            // 편집 모드일 때 루틴 추가 버튼 표시
+                            if (_isEditMode)
+                              GestureDetector(
+                                onTap: _addRoutine,
+                                child: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Color(0xFF8B6B47),
+                                  size: 24,
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         Expanded(
@@ -447,6 +462,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
           ),
+          // 편집 모드일 때 삭제 버튼 표시
+          if (_isEditMode)
+            GestureDetector(
+              onTap: () => _deleteRoutine(index),
+              child: const Icon(
+                Icons.remove_circle_outline,
+                color: Color(0xFFD4A574),
+                size: 20,
+              ),
+            ),
         ],
       ),
     );
@@ -488,6 +513,87 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 Navigator.pop(context);
               },
               child: const Text('저장', style: TextStyle(color: Color(0xFF8B6B47), fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 루틴 삭제
+  void _deleteRoutine(int index) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5E6D3),
+          title: const Text('루틴 삭제', style: TextStyle(color: Color(0xFF6B4E3D))),
+          content: Text(
+            '${_routines[index]['text']} 항목을 삭제하시겠습니까?',
+            style: const TextStyle(color: Color(0xFF6B4E3D)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF8B6B47))),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _routines.removeAt(index);
+                });
+                Navigator.pop(context);
+              },
+              child: const Text(
+                '삭제',
+                style: TextStyle(color: Color(0xFFD4A574), fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 루틴 추가
+  void _addRoutine() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF5E6D3),
+          title: const Text('루틴 추가', style: TextStyle(color: Color(0xFF6B4E3D))),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: const TextStyle(color: Color(0xFF6B4E3D)),
+            decoration: InputDecoration(
+              hintText: '새 루틴 내용을 입력하세요',
+              hintStyle: TextStyle(color: const Color(0xFF8B6B47).withValues(alpha: 0.5)),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3)),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF8B6B47)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Color(0xFF8B6B47))),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  setState(() {
+                    _routines.add({'text': controller.text, 'checked': false});
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('추가', style: TextStyle(color: Color(0xFF8B6B47), fontWeight: FontWeight.bold)),
             ),
           ],
         );
