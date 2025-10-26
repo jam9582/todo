@@ -281,9 +281,41 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // --- 드래그 관련 메서드 ---
 
+  /// 특정 시간과 트랙에 일정이 있는지 확인
+  bool _hasScheduleAt(TimeOfDay time, int track) {
+    final timeInMinutes = time.hour * 60 + time.minute;
+
+    for (final schedule in _schedules) {
+      // 같은 트랙인지 확인
+      if (schedule.track != track) continue;
+
+      final startMinutes = schedule.startTime.hour * 60 + schedule.startTime.minute;
+      var endMinutes = schedule.endTime.hour * 60 + schedule.endTime.minute;
+      if (schedule.endTime.hour == 0 && schedule.endTime.minute == 0) {
+        endMinutes = 24 * 60;
+      }
+
+      // 시간이 겹치는지 확인 (시작시간 이상, 종료시간 미만)
+      if (timeInMinutes >= startMinutes && timeInMinutes < endMinutes) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /// 드래그 시작
   void _onDragStart(DragStartDetails details, int track) {
     _dragStartTime = TimeUtils.getTimeFromOffset(details.localPosition.dy, AppSizes.hourHeight);
+
+    // 이미 일정이 있는 시간이면 드래그 무시
+    if (_hasScheduleAt(_dragStartTime!, track)) {
+      _dragStartTime = null;
+      _dragEndTime = null;
+      _previewEntry = null;
+      return;
+    }
+
     _dragEndTime = _dragStartTime;
 
     // 트랙은 GestureDetector에서 이미 결정되어 전달됨
