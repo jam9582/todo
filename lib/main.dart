@@ -241,7 +241,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
                 ),
-                // 오른쪽 하단: 카테고리별 시간 통계 (편집 모드일 때만 표시)
+                // 오른쪽 하단: 카테고리별 시간 통계 (항상 표시)
                 Expanded(
                   flex: 1,
                   child: Container(
@@ -253,7 +253,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         left: BorderSide(color: const Color(0xFF8B6B47).withValues(alpha: 0.3), width: 1),
                       ),
                     ),
-                    child: _isEditMode ? _buildStatistics() : const SizedBox.shrink(),
+                    child: _buildStatistics(),
                   ),
                 ),
               ],
