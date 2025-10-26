@@ -123,7 +123,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           ),
 
                         // 4. 드래그를 감지할 제스처 영역 (편집 모드일 때만)
-                        if (_isEditMode) _buildGestureDetector(),
+                        // 트랙 0 (왼쪽)
+                        if (_isEditMode) _buildTrackGestureDetector(0, leftWidth),
+                        // 트랙 1 (오른쪽)
+                        if (_isEditMode) _buildTrackGestureDetector(1, leftWidth),
                       ],
                     ),
                   ),
@@ -252,14 +255,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // --- 위젯 빌더 ---
 
-  /// 드래그를 감지하는 투명한 위젯
-  Widget _buildGestureDetector() {
-    return Positioned.fill(
-      left: AppSizes.timelineWidth,
+  /// 트랙별 드래그를 감지하는 투명한 위젯
+  Widget _buildTrackGestureDetector(int track, double totalWidth) {
+    final double availableWidth = totalWidth - AppSizes.timelineWidth;
+    final double trackWidth = availableWidth / 2;
+
+    // 트랙별 위치 계산
+    final double trackLeft = track == 0
+        ? AppSizes.timelineWidth
+        : AppSizes.timelineWidth + trackWidth;
+
+    return Positioned(
+      top: 0,
+      bottom: 0,
+      left: trackLeft,
+      width: trackWidth,
       child: GestureDetector(
-        onVerticalDragStart: _onDragStart,
+        onVerticalDragStart: (details) => _onDragStart(details, track),
         onVerticalDragUpdate: _onDragUpdate,
         onVerticalDragEnd: _onDragEnd,
+        behavior: HitTestBehavior.translucent,
       ),
     );
   }
@@ -267,16 +282,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   // --- 드래그 관련 메서드 ---
 
   /// 드래그 시작
-  void _onDragStart(DragStartDetails details) {
+  void _onDragStart(DragStartDetails details, int track) {
     _dragStartTime = TimeUtils.getTimeFromOffset(details.localPosition.dy, AppSizes.hourHeight);
     _dragEndTime = _dragStartTime;
 
-    // 드래그 위치에 따라 트랙 선택 (왼쪽 절반 = 트랙 0, 오른쪽 절반 = 트랙 1)
-    final screenWidth = MediaQuery.of(context).size.width;
-    final leftWidth = screenWidth * 2 / 5;
-    final availableWidth = leftWidth - AppSizes.timelineWidth;
-    final trackThreshold = AppSizes.timelineWidth + (availableWidth / 2);
-    _selectedTrack = details.localPosition.dx < trackThreshold ? 0 : 1;
+    // 트랙은 GestureDetector에서 이미 결정되어 전달됨
+    _selectedTrack = track;
 
     setState(() {
       _previewEntry = ScheduleEntry(

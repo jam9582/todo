@@ -40,17 +40,21 @@ class ScheduleBlock extends StatelessWidget {
 
     // 트랙별 위치 계산 (화면 너비에서 시간표를 뺀 영역을 2등분)
     // track 0: 왼쪽 트랙, track 1: 오른쪽 트랙
-    final double availableWidth = totalWidth - timelineWidth - 8.0; // 8.0은 여백
+    final double availableWidth = totalWidth - timelineWidth;
     final double trackWidth = availableWidth / 2;
     final int trackNumber = entry.track; // null-safe
+
+    // 각 트랙 내에서 중앙 정렬 (좌우 여백 추가)
+    final double horizontalPadding = 8.0;
+    final double blockWidth = trackWidth - (horizontalPadding * 2);
     final double trackLeft = trackNumber == 0
-        ? timelineWidth + 4.0
-        : timelineWidth + 4.0 + trackWidth;
+        ? timelineWidth + horizontalPadding
+        : timelineWidth + trackWidth + horizontalPadding;
 
     return Positioned(
       top: top,
       left: trackLeft,
-      width: trackWidth - 4.0,
+      width: blockWidth,
       height: height,
       child: GestureDetector(
         onTap: isEditMode && !isPreview ? onTap : null,
