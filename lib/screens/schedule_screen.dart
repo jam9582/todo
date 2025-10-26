@@ -50,14 +50,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   /// 편집 모드 상태 (true일 때만 드래그로 일정 추가 가능)
   bool _isEditMode = false;
 
+  /// 드래그한 트랙 (0: 왼쪽, 1: 오른쪽)
+  int _selectedTrack = 0;
+
   // --- 빌드 메서드 ---
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final leftWidth = screenWidth / 3; // 왼쪽 1/3
-    final rightWidth = screenWidth * 2 / 3; // 오른쪽 2/3
+    final leftWidth = screenWidth * 2 / 5; // 왼쪽 2/5
+    final rightWidth = screenWidth * 3 / 5; // 오른쪽 3/5
 
     return Scaffold(
       appBar: AppBar(
@@ -93,6 +96,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           painter: TimelinePainter(
                             hourHeight: AppSizes.hourHeight,
                             timelineWidth: AppSizes.timelineWidth,
+                            totalWidth: leftWidth,
                             context: context,
                           ),
                         ),
@@ -103,6 +107,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               isEditMode: _isEditMode,
                               hourHeight: AppSizes.hourHeight,
                               timelineWidth: AppSizes.timelineWidth,
+                              totalWidth: leftWidth,
                               onTap: () => _deleteSchedule(entry),
                             )),
 
@@ -114,6 +119,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             isEditMode: _isEditMode,
                             hourHeight: AppSizes.hourHeight,
                             timelineWidth: AppSizes.timelineWidth,
+                            totalWidth: leftWidth,
                           ),
 
                         // 4. 드래그를 감지할 제스처 영역 (편집 모드일 때만)
@@ -265,10 +271,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _dragStartTime = TimeUtils.getTimeFromOffset(details.localPosition.dy, AppSizes.hourHeight);
     _dragEndTime = _dragStartTime;
 
+    // 드래그 위치에 따라 트랙 선택 (왼쪽 절반 = 트랙 0, 오른쪽 절반 = 트랙 1)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final leftWidth = screenWidth * 2 / 5;
+    final availableWidth = leftWidth - AppSizes.timelineWidth;
+    final trackThreshold = AppSizes.timelineWidth + (availableWidth / 2);
+    _selectedTrack = details.localPosition.dx < trackThreshold ? 0 : 1;
+
     setState(() {
       _previewEntry = ScheduleEntry(
         startTime: _dragStartTime!,
         endTime: _dragEndTime!,
+        track: _selectedTrack,
         category: ActivityCategory(
           name: '...',
           icon: Icons.drag_handle,
@@ -291,6 +305,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _previewEntry = ScheduleEntry(
         startTime: startTimeInMinutes < endTimeInMinutes ? _dragStartTime! : _dragEndTime!,
         endTime: startTimeInMinutes < endTimeInMinutes ? _dragEndTime! : _dragStartTime!,
+        track: _selectedTrack,
         category: _previewEntry!.category,
       );
     });
@@ -510,6 +525,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         _schedules.add(ScheduleEntry(
                           startTime: _previewEntry!.startTime,
                           endTime: _previewEntry!.endTime,
+                          track: _previewEntry!.track,
                           category: category,
                         ));
                         _previewEntry = null;

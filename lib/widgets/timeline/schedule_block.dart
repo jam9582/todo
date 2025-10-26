@@ -9,6 +9,7 @@ class ScheduleBlock extends StatelessWidget {
   final bool isEditMode;
   final double hourHeight;
   final double timelineWidth;
+  final double totalWidth; // 타임라인 전체 너비
   final VoidCallback? onTap;
 
   const ScheduleBlock({
@@ -18,6 +19,7 @@ class ScheduleBlock extends StatelessWidget {
     required this.isEditMode,
     required this.hourHeight,
     required this.timelineWidth,
+    required this.totalWidth,
     this.onTap,
   });
 
@@ -36,10 +38,19 @@ class ScheduleBlock extends StatelessWidget {
 
     if (height <= 0) return const SizedBox.shrink();
 
+    // 트랙별 위치 계산 (화면 너비에서 시간표를 뺀 영역을 2등분)
+    // track 0: 왼쪽 트랙, track 1: 오른쪽 트랙
+    final double availableWidth = totalWidth - timelineWidth - 8.0; // 8.0은 여백
+    final double trackWidth = availableWidth / 2;
+    final int trackNumber = entry.track; // null-safe
+    final double trackLeft = trackNumber == 0
+        ? timelineWidth + 4.0
+        : timelineWidth + 4.0 + trackWidth;
+
     return Positioned(
       top: top,
-      left: timelineWidth + 4.0,
-      right: 4.0,
+      left: trackLeft,
+      width: trackWidth - 4.0,
       height: height,
       child: GestureDetector(
         onTap: isEditMode && !isPreview ? onTap : null,

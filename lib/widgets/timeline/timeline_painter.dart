@@ -5,11 +5,13 @@ import '../../utils/constants.dart';
 class TimelinePainter extends CustomPainter {
   final double hourHeight;
   final double timelineWidth;
+  final double totalWidth;
   final BuildContext context;
 
   TimelinePainter({
     required this.hourHeight,
     required this.timelineWidth,
+    required this.totalWidth,
     required this.context,
   });
 
@@ -22,6 +24,11 @@ class TimelinePainter extends CustomPainter {
     final dotPaint = Paint()
       ..color = AppColors.primaryBrown.withValues(alpha: 0.4);
 
+    // 트랙 구분선 페인트
+    final trackDividerPaint = Paint()
+      ..color = AppColors.primaryBrown.withValues(alpha: 0.3)
+      ..strokeWidth = 1.5;
+
     final textPainter = TextPainter(
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
@@ -32,6 +39,10 @@ class TimelinePainter extends CustomPainter {
       fontSize: 10,
       fontWeight: FontWeight.w500,
     );
+
+    // 중앙 트랙 구분선 위치 계산
+    final double availableWidth = totalWidth - timelineWidth;
+    final double trackDividerX = timelineWidth + (availableWidth / 2);
 
     for (int i = 0; i < 24; i++) {
       final y = i * hourHeight;
@@ -65,12 +76,20 @@ class TimelinePainter extends CustomPainter {
         dotPaint,
       );
     }
+
+    // Draw vertical track divider line (중앙 구분선)
+    canvas.drawLine(
+      Offset(trackDividerX, 0),
+      Offset(trackDividerX, size.height),
+      trackDividerPaint,
+    );
   }
 
   @override
   bool shouldRepaint(covariant TimelinePainter oldDelegate) {
     return oldDelegate.hourHeight != hourHeight ||
         oldDelegate.timelineWidth != timelineWidth ||
+        oldDelegate.totalWidth != totalWidth ||
         oldDelegate.context != context;
   }
 }
