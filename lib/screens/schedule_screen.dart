@@ -53,11 +53,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   /// 드래그한 트랙 (0: 왼쪽, 1: 오른쪽)
   int _selectedTrack = 0;
 
-  /// 시간 조정 중인 일정 (null이면 조정 중 아님)
-  ScheduleEntry? _resizingEntry;
+  /// 시간 조정 중인 일정의 인덱스 (-1이면 조정 중 아님)
+  int _resizingIndex = -1;
 
-  /// 시간 조정 모드 ('start' 또는 'end')
-  String? _resizeMode;
+  /// 길게 누르기 시작한 Y 좌표 (타임라인 기준)
+  double _longPressStartY = 0.0;
 
   /// 타임라인 스택의 GlobalKey (좌표 변환용)
   final GlobalKey _timelineStackKey = GlobalKey();
@@ -112,21 +112,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ),
 
                         // 2. 저장된 일정 블록들
-                        ..._schedules.map((entry) => ScheduleBlock(
-                              entry: entry,
-                              isEditMode: _isEditMode,
-                              hourHeight: AppSizes.hourHeight,
-                              timelineWidth: AppSizes.timelineWidth,
-                              totalWidth: leftWidth,
-                              isResizing: _resizingEntry == entry,
-                              onTap: () => _deleteSchedule(entry),
-                              onResizeStartDrag: (details) => _onResizeStart(entry, 'start', details),
-                              onResizeStartUpdate: (details) => _onResizeUpdate(details),
-                              onResizeStartEnd: (details) => _onResizeEnd(),
-                              onResizeEndDrag: (details) => _onResizeStart(entry, 'end', details),
-                              onResizeEndUpdate: (details) => _onResizeUpdate(details),
-                              onResizeEndEnd: (details) => _onResizeEnd(),
-                            )),
+                        ..._schedules.asMap().entries.map((mapEntry) {
+                          final index = mapEntry.key;
+                          final entry = mapEntry.value;
+                          return ScheduleBlock(
+                            entry: entry,
+                            isEditMode: _isEditMode,
+                            hourHeight: AppSizes.hourHeight,
+                            timelineWidth: AppSizes.timelineWidth,
+                            totalWidth: leftWidth,
+                            isResizing: _resizingIndex == index,
+                            onTap: () => _deleteSchedule(entry),
+                            onLongPressStart: (details) => _onBlockLongPressStart(index, details),
+                            onLongPressMoveUpdate: (details) => _onBlockLongPressMoveUpdate(details),
+                            onLongPressEnd: (details) => _onBlockLongPressEnd(),
+                          );
+                        }),
 
                         // 3. 드래그 중인 임시 블록
                         if (_previewEntry != null)
@@ -290,19 +291,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       child: GestureDetector(
         onVerticalDragStart: (details) {
           // 시간 조정 모드가 아닐 때만 새 일정 추가 가능
-          if (_resizingEntry == null) {
+          if (_resizingIndex == -1) {
             _onDragStart(details, track);
           }
         },
         onVerticalDragUpdate: (details) {
           // 시간 조정 모드가 아닐 때만 일반 드래그
-          if (_resizingEntry == null) {
+          if (_resizingIndex == -1) {
             _onDragUpdate(details);
           }
         },
         onVerticalDragEnd: (details) {
           // 시간 조정 모드가 아닐 때만 일반 드래그 종료
-          if (_resizingEntry == null) {
+          if (_resizingIndex == -1) {
             _onDragEnd(details);
           }
         },
@@ -313,17 +314,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   // --- 시간 조정 관련 메서드 ---
 
-  /// 일정 시간 조정 드래그 시작
-  void _onResizeStart(ScheduleEntry entry, String mode, DragStartDetails details) {
+  /// 블록을 길게 누르기 시작
+  void _onBlockLongPressStart(int index, LongPressStartDetails details) {
+    // 타임라인 Stack의 RenderBox를 가져와서 좌표 변환
+    final RenderBox? stackRenderBox = _timelineStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackRenderBox == null) return;
+
+    // globalPosition을 타임라인 Stack 기준의 localPosition으로 변환
+    final localPos = stackRenderBox.globalToLocal(details.globalPosition);
+
     setState(() {
-      _resizingEntry = entry;
-      _resizeMode = mode;
+      _resizingIndex = index;
+      _longPressStartY = localPos.dy;
     });
   }
 
-  /// 일정 시간 조정 드래그 중
-  void _onResizeUpdate(DragUpdateDetails details) {
-    if (_resizingEntry == null || _resizeMode == null) return;
+  /// 블록을 길게 누르고 드래그 중
+  void _onBlockLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+    if (_resizingIndex == -1) return;
+    if (_resizingIndex < 0 || _resizingIndex >= _schedules.length) return;
 
     // 타임라인 Stack의 RenderBox를 가져와서 좌표 변환
     final RenderBox? stackRenderBox = _timelineStackKey.currentContext?.findRenderObject() as RenderBox?;
@@ -331,48 +340,51 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     // globalPosition을 타임라인 Stack 기준의 localPosition으로 변환
     final localPos = stackRenderBox.globalToLocal(details.globalPosition);
-    final newTime = TimeUtils.getTimeFromOffset(
-      localPos.dy,
-      AppSizes.hourHeight,
-    );
+    final currentY = localPos.dy;
+    final deltaY = currentY - _longPressStartY;
 
-    final index = _schedules.indexOf(_resizingEntry!);
-    if (index == -1) return;
+    final currentEntry = _schedules[_resizingIndex];
+    TimeOfDay newStartTime = currentEntry.startTime;
+    TimeOfDay newEndTime = currentEntry.endTime;
 
-    TimeOfDay newStartTime = _resizingEntry!.startTime;
-    TimeOfDay newEndTime = _resizingEntry!.endTime;
-
-    if (_resizeMode == 'start') {
-      newStartTime = newTime;
-      // 시작 시간이 종료 시간보다 늦으면 무시
-      final startMinutes = newStartTime.hour * 60 + newStartTime.minute;
-      var endMinutes = newEndTime.hour * 60 + newEndTime.minute;
-      if (newEndTime.hour == 0 && newEndTime.minute == 0) endMinutes = 24 * 60;
-      if (startMinutes >= endMinutes) return;
+    // 위로 드래그 (deltaY < 0) = 시작 시간을 위로 늘림
+    // 아래로 드래그 (deltaY > 0) = 종료 시간을 아래로 늘림
+    if (deltaY < 0) {
+      // 위로 드래그: 시작 시간 조정
+      newStartTime = TimeUtils.getTimeFromOffset(
+        currentY,
+        AppSizes.hourHeight,
+      );
     } else {
-      newEndTime = newTime;
-      // 종료 시간이 시작 시간보다 이르면 무시
-      final startMinutes = newStartTime.hour * 60 + newStartTime.minute;
-      final endMinutes = newEndTime.hour * 60 + newEndTime.minute;
-      if (endMinutes <= startMinutes && !(newEndTime.hour == 0 && newEndTime.minute == 0)) return;
+      // 아래로 드래그: 종료 시간 조정
+      newEndTime = TimeUtils.getTimeFromOffset(
+        currentY,
+        AppSizes.hourHeight,
+      );
     }
 
+    // 최소 30분 검증
+    final startMinutes = newStartTime.hour * 60 + newStartTime.minute;
+    var endMinutes = newEndTime.hour * 60 + newEndTime.minute;
+    if (newEndTime.hour == 0 && newEndTime.minute == 0) endMinutes = 24 * 60;
+
+    if (endMinutes - startMinutes < 30) return;
+
     setState(() {
-      _schedules[index] = ScheduleEntry(
+      _schedules[_resizingIndex] = ScheduleEntry(
         startTime: newStartTime,
         endTime: newEndTime,
-        track: _resizingEntry!.track,
-        category: _resizingEntry!.category,
+        track: currentEntry.track,
+        category: currentEntry.category,
       );
-      _resizingEntry = _schedules[index]; // 업데이트된 entry로 교체
     });
   }
 
-  /// 일정 시간 조정 드래그 종료
-  void _onResizeEnd() {
+  /// 블록 길게 누르기 종료
+  void _onBlockLongPressEnd() {
     setState(() {
-      _resizingEntry = null;
-      _resizeMode = null;
+      _resizingIndex = -1;
+      _longPressStartY = 0.0;
     });
   }
 

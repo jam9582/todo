@@ -12,12 +12,9 @@ class ScheduleBlock extends StatelessWidget {
   final double totalWidth; // 타임라인 전체 너비
   final bool isResizing; // 시간 조정 중인지 여부
   final VoidCallback? onTap;
-  final Function(DragStartDetails)? onResizeStartDrag; // 상단(시작시간) 드래그 시작
-  final Function(DragUpdateDetails)? onResizeStartUpdate; // 상단 드래그 중
-  final Function(DragEndDetails)? onResizeStartEnd; // 상단 드래그 종료
-  final Function(DragStartDetails)? onResizeEndDrag; // 하단(종료시간) 드래그 시작
-  final Function(DragUpdateDetails)? onResizeEndUpdate; // 하단 드래그 중
-  final Function(DragEndDetails)? onResizeEndEnd; // 하단 드래그 종료
+  final Function(LongPressStartDetails)? onLongPressStart; // 길게 누르기 시작
+  final Function(LongPressMoveUpdateDetails)? onLongPressMoveUpdate; // 길게 누르고 드래그 중
+  final Function(LongPressEndDetails)? onLongPressEnd; // 길게 누르기 종료
 
   const ScheduleBlock({
     super.key,
@@ -29,12 +26,9 @@ class ScheduleBlock extends StatelessWidget {
     required this.totalWidth,
     this.isResizing = false,
     this.onTap,
-    this.onResizeStartDrag,
-    this.onResizeStartUpdate,
-    this.onResizeStartEnd,
-    this.onResizeEndDrag,
-    this.onResizeEndUpdate,
-    this.onResizeEndEnd,
+    this.onLongPressStart,
+    this.onLongPressMoveUpdate,
+    this.onLongPressEnd,
   });
 
   @override
@@ -71,7 +65,10 @@ class ScheduleBlock extends StatelessWidget {
       width: blockWidth,
       height: height,
       child: GestureDetector(
-        onTap: isEditMode && !isPreview ? onTap : null,
+        onTap: isEditMode && !isPreview && !isResizing ? onTap : null,
+        onLongPressStart: isEditMode && !isPreview ? onLongPressStart : null,
+        onLongPressMoveUpdate: isEditMode && !isPreview ? onLongPressMoveUpdate : null,
+        onLongPressEnd: isEditMode && !isPreview ? onLongPressEnd : null,
         child: Opacity(
           opacity: isPreview ? 0.6 : 1.0,
           child: Container(
@@ -84,102 +81,26 @@ class ScheduleBlock extends StatelessWidget {
                 width: isEditMode && !isPreview ? 2.5 : 1.5,
               ),
             ),
-            child: Stack(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 메인 컨텐츠
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          entry.category.name,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.background,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isEditMode && !isPreview && !isResizing)
-                        const Icon(
-                          Icons.delete_outline,
-                          color: AppColors.background,
-                          size: AppSizes.deleteIconSize,
-                        ),
-                    ],
+                Expanded(
+                  child: Text(
+                    entry.category.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.background,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // 상단 드래그 영역 (시작 시간 조정) - 길게 누른 후 드래그
-                if (isEditMode && !isPreview && height > 60)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 25,
-                    child: GestureDetector(
-                      onLongPressMoveUpdate: (details) {
-                        if (onResizeStartUpdate != null) {
-                          // LongPressMoveUpdate는 globalPosition을 제공하므로 변환 필요
-                          onResizeStartUpdate!(DragUpdateDetails(
-                            globalPosition: details.globalPosition,
-                            localPosition: details.localPosition,
-                          ));
-                        }
-                      },
-                      onLongPressStart: (details) {
-                        if (onResizeStartDrag != null) {
-                          onResizeStartDrag!(DragStartDetails(
-                            globalPosition: details.globalPosition,
-                            localPosition: details.localPosition,
-                          ));
-                        }
-                      },
-                      onLongPressEnd: (details) {
-                        if (onResizeStartEnd != null) {
-                          onResizeStartEnd!(DragEndDetails());
-                        }
-                      },
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
-                    ),
-                  ),
-                // 하단 드래그 영역 (종료 시간 조정) - 길게 누른 후 드래그
-                if (isEditMode && !isPreview && height > 60)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 25,
-                    child: GestureDetector(
-                      onLongPressMoveUpdate: (details) {
-                        if (onResizeEndUpdate != null) {
-                          onResizeEndUpdate!(DragUpdateDetails(
-                            globalPosition: details.globalPosition,
-                            localPosition: details.localPosition,
-                          ));
-                        }
-                      },
-                      onLongPressStart: (details) {
-                        if (onResizeEndDrag != null) {
-                          onResizeEndDrag!(DragStartDetails(
-                            globalPosition: details.globalPosition,
-                            localPosition: details.localPosition,
-                          ));
-                        }
-                      },
-                      onLongPressEnd: (details) {
-                        if (onResizeEndEnd != null) {
-                          onResizeEndEnd!(DragEndDetails());
-                        }
-                      },
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
-                    ),
+                if (isEditMode && !isPreview && !isResizing)
+                  const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.background,
+                    size: AppSizes.deleteIconSize,
                   ),
               ],
             ),

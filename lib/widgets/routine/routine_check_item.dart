@@ -35,7 +35,7 @@ class RoutineCheckItem extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: GestureDetector(
-              onTap: onEdit,
+              onTap: isEditMode ? onEdit : null,
               child: Text(
                 routine['text'],
                 style: TextStyle(
