@@ -59,6 +59,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   /// 길게 누르기 시작한 Y 좌표 (타임라인 기준)
   double _longPressStartY = 0.0;
 
+  /// 조정 중인 시간선 ('start' 또는 'end')
+  String _resizingEdge = '';
+
   /// 타임라인 스택의 GlobalKey (좌표 변환용)
   final GlobalKey _timelineStackKey = GlobalKey();
 
@@ -323,9 +326,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // globalPosition을 타임라인 Stack 기준의 localPosition으로 변환
     final localPos = stackRenderBox.globalToLocal(details.globalPosition);
 
+    // 현재 일정의 시작/끝 Y 위치 계산
+    final currentEntry = _schedules[index];
+    final double minuteHeight = AppSizes.hourHeight / 60.0;
+    final double startMinutes = currentEntry.startTime.hour * 60.0 + currentEntry.startTime.minute;
+    double endMinutes = currentEntry.endTime.hour * 60.0 + currentEntry.endTime.minute;
+    if (currentEntry.endTime.hour == 0 && currentEntry.endTime.minute == 0) {
+      endMinutes = 24 * 60.0;
+    }
+
+    final double startY = startMinutes * minuteHeight;
+    final double endY = endMinutes * minuteHeight;
+    final double centerY = (startY + endY) / 2;
+
+    // 누른 위치가 블록의 위쪽 절반이면 시작 시간선, 아래쪽 절반이면 끝 시간선
+    final String edge = localPos.dy < centerY ? 'start' : 'end';
+
     setState(() {
       _resizingIndex = index;
       _longPressStartY = localPos.dy;
+      _resizingEdge = edge;
     });
   }
 
@@ -341,22 +361,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // globalPosition을 타임라인 Stack 기준의 localPosition으로 변환
     final localPos = stackRenderBox.globalToLocal(details.globalPosition);
     final currentY = localPos.dy;
-    final deltaY = currentY - _longPressStartY;
 
     final currentEntry = _schedules[_resizingIndex];
     TimeOfDay newStartTime = currentEntry.startTime;
     TimeOfDay newEndTime = currentEntry.endTime;
 
-    // 위로 드래그 (deltaY < 0) = 시작 시간을 위로 늘림
-    // 아래로 드래그 (deltaY > 0) = 종료 시간을 아래로 늘림
-    if (deltaY < 0) {
-      // 위로 드래그: 시작 시간 조정
+    // _resizingEdge에 따라 어느 시간선을 조정할지 결정
+    if (_resizingEdge == 'start') {
+      // 시작 시간선을 조정, 끝 시간 고정
       newStartTime = TimeUtils.getTimeFromOffset(
         currentY,
         AppSizes.hourHeight,
       );
+      newEndTime = currentEntry.endTime; // 끝 시간 고정
     } else {
-      // 아래로 드래그: 종료 시간 조정
+      // 끝 시간선을 조정, 시작 시간 고정
+      newStartTime = currentEntry.startTime; // 시작 시간 고정
       newEndTime = TimeUtils.getTimeFromOffset(
         currentY,
         AppSizes.hourHeight,
@@ -385,6 +405,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     setState(() {
       _resizingIndex = -1;
       _longPressStartY = 0.0;
+      _resizingEdge = '';
     });
   }
 
