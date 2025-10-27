@@ -292,7 +292,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 _buildNavItem(Icons.home, '홈', true),
                 _buildNavItem(Icons.calendar_today, '캘린더', false),
                 _buildNavItem(Icons.bar_chart, '통계', false),
-                _buildNavItem(Icons.settings, '설정', false),
+                _buildNavItem(Icons.person, '마이페이지', false),
               ],
             ),
           ),
