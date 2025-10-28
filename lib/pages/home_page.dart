@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/activity_category.dart';
 import '../models/schedule_entry.dart';
+import '../providers/schedule_provider.dart';
+import '../providers/category_provider.dart';
 import '../widgets/timeline/timeline_painter.dart';
 import '../widgets/timeline/schedule_block.dart';
 import '../widgets/routine/routine_check_item.dart';
@@ -17,19 +20,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // --- 상태 변수 ---
-
-  /// 저장된 모든 일정
-  final List<ScheduleEntry> _schedules = [];
-
-  /// 기본으로 제공할 카테고리 목록 (따뜻한 톤으로 변경)
-  final List<ActivityCategory> _categories = [
-    ActivityCategory(name: '업무', icon: Icons.work, color: AppColors.categoryWork),
-    ActivityCategory(name: '공부', icon: Icons.book, color: AppColors.categoryStudy),
-    ActivityCategory(name: '식사', icon: Icons.restaurant, color: AppColors.categoryMeal),
-    ActivityCategory(name: '운동', icon: Icons.fitness_center, color: AppColors.categoryExercise),
-    ActivityCategory(name: '휴식', icon: Icons.self_improvement, color: AppColors.categoryRest),
-    ActivityCategory(name: '게임', icon: Icons.gamepad, color: AppColors.categoryGame),
-  ];
+  // _schedules와 _categories는 Provider에서 관리
 
   /// 루틴 체크리스트
   final List<Map<String, dynamic>> _routines = [
@@ -70,9 +61,14 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final leftWidth = screenWidth * 2 / 5; // 왼쪽 2/5
     final rightWidth = screenWidth * 3 / 5; // 오른쪽 3/5
+
+    // Provider에서 데이터 가져오기
+    final scheduleProvider = context.watch<ScheduleProvider>();
+    final categoryProvider = context.watch<CategoryProvider>();
+    final schedules = scheduleProvider.schedules;
+    final categories = categoryProvider.categories;
 
     return Scaffold(
       appBar: AppBar(
@@ -115,7 +111,7 @@ class _HomePageState extends State<HomePage> {
                         ),
 
                         // 2. 저장된 일정 블록들
-                        ..._schedules.asMap().entries.map((mapEntry) {
+                        ...schedules.asMap().entries.map((mapEntry) {
                           final index = mapEntry.key;
                           final entry = mapEntry.value;
                           return ScheduleBlock(
@@ -260,8 +256,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     child: StatisticsPanel(
-                      schedules: _schedules,
-                      categories: _categories,
+                      schedules: schedules,
+                      categories: categories,
                     ),
                   ),
                 ),
@@ -326,7 +322,8 @@ class _HomePageState extends State<HomePage> {
     final localPos = stackRenderBox.globalToLocal(details.globalPosition);
 
     // 현재 일정의 시작/끝 Y 위치 계산
-    final currentEntry = _schedules[index];
+    final schedules = context.read<ScheduleProvider>().schedules;
+    final currentEntry = schedules[index];
     final double minuteHeight = AppSizes.hourHeight / 60.0;
     final double startMinutes = currentEntry.startTime.hour * 60.0 + currentEntry.startTime.minute;
     double endMinutes = currentEntry.endTime.hour * 60.0 + currentEntry.endTime.minute;
@@ -351,7 +348,11 @@ class _HomePageState extends State<HomePage> {
   /// 블록을 길게 누르고 드래그 중
   void _onBlockLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
     if (_resizingIndex == -1) return;
-    if (_resizingIndex < 0 || _resizingIndex >= _schedules.length) return;
+
+    final scheduleProvider = context.read<ScheduleProvider>();
+    final schedules = scheduleProvider.schedules;
+
+    if (_resizingIndex < 0 || _resizingIndex >= schedules.length) return;
 
     // 타임라인 Stack의 RenderBox를 가져와서 좌표 변환
     final RenderBox? stackRenderBox = _timelineStackKey.currentContext?.findRenderObject() as RenderBox?;
@@ -361,7 +362,7 @@ class _HomePageState extends State<HomePage> {
     final localPos = stackRenderBox.globalToLocal(details.globalPosition);
     final currentY = localPos.dy;
 
-    final currentEntry = _schedules[_resizingIndex];
+    final currentEntry = schedules[_resizingIndex];
     TimeOfDay newStartTime = currentEntry.startTime;
     TimeOfDay newEndTime = currentEntry.endTime;
 
@@ -389,14 +390,16 @@ class _HomePageState extends State<HomePage> {
 
     if (endMinutes - startMinutes < 30) return;
 
-    setState(() {
-      _schedules[_resizingIndex] = ScheduleEntry(
+    // Provider를 통해 일정 업데이트
+    scheduleProvider.updateSchedule(
+      _resizingIndex,
+      ScheduleEntry(
         startTime: newStartTime,
         endTime: newEndTime,
         track: currentEntry.track,
         category: currentEntry.category,
-      );
-    });
+      ),
+    );
   }
 
   /// 블록 길게 누르기 종료
@@ -413,8 +416,9 @@ class _HomePageState extends State<HomePage> {
   /// 특정 시간과 트랙에 일정이 있는지 확인
   bool _hasScheduleAt(TimeOfDay time, int track) {
     final timeInMinutes = time.hour * 60 + time.minute;
+    final schedules = context.read<ScheduleProvider>().schedules;
 
-    for (final schedule in _schedules) {
+    for (final schedule in schedules) {
       // 같은 트랙인지 확인
       if (schedule.track != track) continue;
 
@@ -647,9 +651,7 @@ class _HomePageState extends State<HomePage> {
             ),
             TextButton(
               onPressed: () {
-                setState(() {
-                  _schedules.remove(entry);
-                });
+                context.read<ScheduleProvider>().removeSchedule(entry);
                 Navigator.pop(context);
               },
               child: const Text(
@@ -665,6 +667,8 @@ class _HomePageState extends State<HomePage> {
 
   /// 카테고리 선택 바텀 시트
   void _showCategoryPicker() {
+    final categories = context.read<CategoryProvider>().categories;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.background,
@@ -690,16 +694,16 @@ class _HomePageState extends State<HomePage> {
               Wrap(
                 spacing: 12.0,
                 runSpacing: 12.0,
-                children: _categories.map((category) {
+                children: categories.map((category) {
                   return InkWell(
                     onTap: () {
+                      context.read<ScheduleProvider>().addSchedule(ScheduleEntry(
+                        startTime: _previewEntry!.startTime,
+                        endTime: _previewEntry!.endTime,
+                        track: _previewEntry!.track,
+                        category: category,
+                      ));
                       setState(() {
-                        _schedules.add(ScheduleEntry(
-                          startTime: _previewEntry!.startTime,
-                          endTime: _previewEntry!.endTime,
-                          track: _previewEntry!.track,
-                          category: category,
-                        ));
                         _previewEntry = null;
                       });
                       Navigator.pop(context);
