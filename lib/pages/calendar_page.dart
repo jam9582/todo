@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:provider/provider.dart';
+import '../providers/schedule_provider.dart';
 import '../utils/constants.dart';
+import '../utils/time_utils.dart';
+import '../models/activity_category.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -16,6 +20,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheduleProvider = context.watch<ScheduleProvider>();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -104,6 +110,47 @@ class _CalendarPageState extends State<CalendarPage> {
             daysOfWeekStyle: const DaysOfWeekStyle(
               weekdayStyle: TextStyle(color: AppColors.darkBrown),
               weekendStyle: TextStyle(color: Colors.red),
+            ),
+            // 각 날짜에 커스텀 마커 표시
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, date, events) {
+                final mainCategoryInfo = scheduleProvider.getMainCategoryForDate(date);
+                if (mainCategoryInfo == null) return null;
+
+                final ActivityCategory category = mainCategoryInfo['category'];
+                final int totalMinutes = mainCategoryInfo['totalMinutes'];
+                final hours = (totalMinutes / 60).toStringAsFixed(1);
+
+                return Positioned(
+                  bottom: 1,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          category.icon,
+                          size: 10,
+                          color: category.color,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          hours,
+                          style: TextStyle(
+                            color: category.color,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),

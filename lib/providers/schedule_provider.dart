@@ -35,10 +35,48 @@ class ScheduleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 특정 날짜의 일정만 가져오기 (나중에 캘린더에서 사용)
+  /// 특정 날짜의 일정만 가져오기
   List<ScheduleEntry> getSchedulesForDate(DateTime date) {
-    // TODO: 날짜별 필터링 구현 (현재는 모든 일정이 "오늘" 것으로 간주)
-    return List.unmodifiable(_schedules);
+    return List.unmodifiable(
+      _schedules.where((schedule) => schedule.isSameDate(date)).toList(),
+    );
+  }
+
+  /// 특정 날짜의 주요 카테고리 정보 가져오기 (캘린더 마커용)
+  /// 반환: {category: CategoryInfo, totalMinutes: int}
+  Map<String, dynamic>? getMainCategoryForDate(DateTime date) {
+    final daySchedules = getSchedulesForDate(date);
+    if (daySchedules.isEmpty) return null;
+
+    // 해당 날짜의 카테고리별 시간 계산
+    final Map<String, int> categoryTimes = {};
+    final Map<String, dynamic> categoryInfo = {};
+
+    for (final schedule in daySchedules) {
+      final startMinutes = schedule.startTime.hour * 60 + schedule.startTime.minute;
+      var endMinutes = schedule.endTime.hour * 60 + schedule.endTime.minute;
+      if (schedule.endTime.hour == 0 && schedule.endTime.minute == 0) {
+        endMinutes = 24 * 60;
+      }
+
+      final duration = endMinutes - startMinutes;
+      final categoryName = schedule.category.name;
+
+      categoryTimes[categoryName] = (categoryTimes[categoryName] ?? 0) + duration;
+      categoryInfo[categoryName] = schedule.category;
+    }
+
+    // 가장 많은 시간을 차지한 카테고리 찾기
+    if (categoryTimes.isEmpty) return null;
+
+    final mainCategoryName = categoryTimes.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+
+    return {
+      'category': categoryInfo[mainCategoryName],
+      'totalMinutes': categoryTimes[mainCategoryName],
+    };
   }
 
   /// 카테고리별 총 시간(분) 계산
