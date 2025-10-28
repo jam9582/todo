@@ -43,6 +43,7 @@ class _CalendarPageState extends State<CalendarPage> {
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: _focusedDay,
             calendarFormat: _calendarFormat,
+            rowHeight: 70, // 각 행의 높이 증가 (기본값: 52)
             selectedDayPredicate: (day) {
               return isSameDay(_selectedDay, day);
             },
@@ -122,27 +123,31 @@ class _CalendarPageState extends State<CalendarPage> {
                 final hours = (totalMinutes / 60).toStringAsFixed(1);
 
                 return Positioned(
-                  bottom: 1,
+                  bottom: 4, // 하단 여백 증가
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: category.color.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: category.color.withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           category.icon,
-                          size: 10,
+                          size: 11,
                           color: category.color,
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 3),
                         Text(
                           hours,
                           style: TextStyle(
                             color: category.color,
-                            fontSize: 9,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

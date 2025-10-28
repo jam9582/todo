@@ -1,37 +1,61 @@
 import 'package:flutter/material.dart';
 import '../models/schedule_entry.dart';
+import '../services/storage_service.dart';
 
 /// 일정 전역 상태 관리
 class ScheduleProvider extends ChangeNotifier {
   // 저장된 모든 일정
-  final List<ScheduleEntry> _schedules = [];
+  List<ScheduleEntry> _schedules = [];
+
+  /// 생성자: Hive에서 데이터 로드
+  ScheduleProvider() {
+    _loadFromHive();
+  }
+
+  /// Hive에서 일정 로드
+  void _loadFromHive() {
+    _schedules = StorageService.loadSchedules();
+    notifyListeners();
+  }
 
   /// 일정 목록 가져오기 (읽기 전용)
   List<ScheduleEntry> get schedules => List.unmodifiable(_schedules);
 
   /// 일정 추가
-  void addSchedule(ScheduleEntry entry) {
+  Future<void> addSchedule(ScheduleEntry entry) async {
     _schedules.add(entry);
+    await StorageService.saveSchedule(entry); // Hive에 저장
     notifyListeners(); // 모든 리스너에게 변경 알림
   }
 
   /// 일정 삭제
-  void removeSchedule(ScheduleEntry entry) {
+  Future<void> removeSchedule(ScheduleEntry entry) async {
     _schedules.remove(entry);
+    await StorageService.deleteSchedule(entry); // Hive에서 삭제
     notifyListeners();
   }
 
   /// 일정 수정 (인덱스로)
-  void updateSchedule(int index, ScheduleEntry newEntry) {
+  Future<void> updateSchedule(int index, ScheduleEntry newEntry) async {
     if (index >= 0 && index < _schedules.length) {
-      _schedules[index] = newEntry;
+      final oldEntry = _schedules[index];
+
+      // 기존 entry의 Hive key를 유지하면서 데이터 업데이트
+      oldEntry.date = newEntry.date;
+      oldEntry.startTimeMinutes = newEntry.startTimeMinutes;
+      oldEntry.endTimeMinutes = newEntry.endTimeMinutes;
+      oldEntry.category = newEntry.category;
+      oldEntry.track = newEntry.track;
+
+      await StorageService.updateSchedule(oldEntry); // Hive 업데이트
       notifyListeners();
     }
   }
 
   /// 모든 일정 삭제
-  void clearSchedules() {
+  Future<void> clearSchedules() async {
     _schedules.clear();
+    await StorageService.clearAllSchedules(); // Hive 클리어
     notifyListeners();
   }
 

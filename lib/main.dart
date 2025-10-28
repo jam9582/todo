@@ -3,9 +3,16 @@ import 'package:provider/provider.dart';
 import 'layouts/main_layout.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/category_provider.dart';
+import 'services/storage_service.dart';
 import 'utils/constants.dart';
 
-void main() {
+void main() async {
+  // Flutter 바인딩 초기화
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Hive 초기화 (StorageService에서 Box 열기 및 Adapter 등록)
+  await StorageService.init();
+
   runApp(const ProtoApp());
 }
 
