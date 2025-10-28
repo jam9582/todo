@@ -11,20 +11,37 @@ class StorageService {
 
   /// Hive 초기화 및 Box 열기
   static Future<void> init() async {
-    // Hive 초기화
-    await Hive.initFlutter();
+    try {
+      // Hive 초기화
+      await Hive.initFlutter();
 
-    // Adapter 등록
-    Hive.registerAdapter(ScheduleEntryAdapter());
-    Hive.registerAdapter(ActivityCategoryAdapter());
+      // Adapter 등록
+      Hive.registerAdapter(ScheduleEntryAdapter());
+      Hive.registerAdapter(ActivityCategoryAdapter());
 
-    // Box 열기
-    _scheduleBox = await Hive.openBox<ScheduleEntry>('schedules');
-    _categoryBox = await Hive.openBox<ActivityCategory>('categories');
+      // Box 열기 (스키마 불일치 시 에러 발생 가능)
+      _scheduleBox = await Hive.openBox<ScheduleEntry>('schedules');
+      _categoryBox = await Hive.openBox<ActivityCategory>('categories');
 
-    // 카테고리가 없으면 기본 카테고리 추가
-    if (_categoryBox.isEmpty) {
-      await _initDefaultCategories();
+      // 카테고리가 없으면 기본 카테고리 추가
+      if (_categoryBox.isEmpty) {
+        await _initDefaultCategories();
+      }
+
+      print('✅ Hive initialized successfully');
+    } catch (e, stackTrace) {
+      print('❌ ========================================');
+      print('❌ Hive 초기화 실패! 스키마 변경 의심');
+      print('❌ ========================================');
+      print('❌ Error: $e');
+      print('❌ StackTrace: $stackTrace');
+      print('❌ ');
+      print('❌ 해결 방법:');
+      print('❌ 1. 터미널에서: flutter clean && flutter run');
+      print('❌ 2. 또는 main.dart에 임시로 추가:');
+      print('❌    await StorageService.deleteBoxFiles();');
+      print('❌ ========================================');
+      rethrow; // 에러 재발생시켜서 앱 중단
     }
   }
 
@@ -92,5 +109,29 @@ class StorageService {
   static Future<void> clearAllCategories() async {
     await _categoryBox.clear();
     await _initDefaultCategories(); // 기본 카테고리 다시 추가
+  }
+
+  // ========== 개발 전용: 데이터 완전 삭제 ==========
+
+  /// 모든 데이터 삭제 (개발 중 스키마 변경 시 사용)
+  static Future<void> deleteAllData() async {
+    await _scheduleBox.clear();
+    await _categoryBox.clear();
+    await _initDefaultCategories();
+    print('🗑️  All data deleted and reset to defaults');
+  }
+
+  /// Box 파일 자체를 디스크에서 삭제 (완전 초기화)
+  static Future<void> deleteBoxFiles() async {
+    await _scheduleBox.close();
+    await _categoryBox.close();
+    await Hive.deleteBoxFromDisk('schedules');
+    await Hive.deleteBoxFromDisk('categories');
+    print('🗑️  Box files deleted from disk');
+
+    // Box 다시 열기
+    _scheduleBox = await Hive.openBox<ScheduleEntry>('schedules');
+    _categoryBox = await Hive.openBox<ActivityCategory>('categories');
+    await _initDefaultCategories();
   }
 }
