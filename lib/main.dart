@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/schedule_screen.dart';
+import 'layouts/main_layout.dart';
 import 'utils/constants.dart';
 
 void main() {
@@ -32,7 +32,7 @@ class ProtoApp extends StatelessWidget {
             child: const SizedBox(
               width: 402,
               height: 874,
-              child: ScheduleScreen(), // 실제 앱 화면
+              child: MainLayout(), // 실제 앱 화면
             ),
           ),
         ),

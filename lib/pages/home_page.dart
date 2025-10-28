@@ -8,14 +8,14 @@ import '../widgets/statistics/statistics_panel.dart';
 import '../utils/constants.dart';
 import '../utils/time_utils.dart';
 
-class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _HomePageState extends State<HomePage> {
   // --- 상태 변수 ---
 
   /// 저장된 모든 일정
@@ -86,12 +86,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
       ),
       backgroundColor: AppColors.background,
-      body: Column(
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
           // 1. 왼쪽 1/3: 스크롤 가능한 타임라인 & 블록 영역
           Container(
             width: leftWidth,
@@ -271,64 +268,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ],
             ),
           ),
-              ],
-            ),
-          ),
-          // 네비게이션 바
-          Container(
-            height: 70,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.primaryBrown.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(Icons.home, '홈', true),
-                _buildNavItem(Icons.calendar_today, '캘린더', false),
-                _buildNavItem(Icons.bar_chart, '통계', false),
-                _buildNavItem(Icons.person, '마이페이지', false),
-              ],
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  // --- 네비게이션 바 아이템 빌더 ---
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return GestureDetector(
-      onTap: () {
-        // 네비게이션 기능은 나중에 구현
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primaryBrown : AppColors.primaryBrown.withValues(alpha: 0.4),
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? AppColors.primaryBrown : AppColors.primaryBrown.withValues(alpha: 0.4),
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
