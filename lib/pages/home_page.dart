@@ -67,16 +67,6 @@ class _HomePageState extends State<HomePage> {
     final categories = categoryProvider.categories;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: AppColors.primaryBrown, size: AppSizes.menuIconSize),
-          onPressed: () {
-            // 메뉴 기능은 나중에 구현
-          },
-        ),
-      ),
       backgroundColor: AppColors.background,
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
