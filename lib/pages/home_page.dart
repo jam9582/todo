@@ -84,12 +84,14 @@ class _HomePageState extends State<HomePage> {
                     children: [
                     // 스크롤 가능한 타임라인
                     SingleChildScrollView(
-                      child: SizedBox(
-                        // 24시간 * 시간당 높이 = 총 스크롤 높이
-                        height: 24 * AppSizes.hourHeight,
-                        child: Stack(
-                          key: _timelineStackKey,
-                          children: [
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 20), // 00시 텍스트가 잘리지 않도록
+                        child: SizedBox(
+                          // 24시간 * 시간당 높이 = 총 스크롤 높이
+                          height: 24 * AppSizes.hourHeight,
+                          child: Stack(
+                            key: _timelineStackKey,
+                            children: [
                             // 1. 배경 (시간, 점선) -> CustomPaint
                             CustomPaint(
                               size: Size(leftWidth, 24 * AppSizes.hourHeight),
@@ -138,7 +140,8 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                    ),
+                      ), // Padding 닫기
+                    ), // SingleChildScrollView 닫기
                     // + 버튼 (플로팅)
                     Positioned(
                       bottom: 16,
