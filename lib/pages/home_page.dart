@@ -359,39 +359,51 @@ class _HomePageState extends State<HomePage> {
     final currentY = localPos.dy;
 
     final currentEntry = schedules[_resizingIndex];
-    TimeOfDay newStartTime = currentEntry.startTime;
-    TimeOfDay newEndTime = currentEntry.endTime;
 
     // _resizingEdge에 따라 어느 시간선을 조정할지 결정
+    int startMinutes, endMinutes;
+
     if (_resizingEdge == 'start') {
       // 시작 시간선을 조정, 끝 시간 고정
-      newStartTime = TimeUtils.getTimeFromOffset(
-        currentY,
-        AppSizes.hourHeight,
+      final draggedTime = TimeUtils.getTimeFromOffset(currentY, AppSizes.hourHeight);
+      startMinutes = draggedTime.hour * 60 + draggedTime.minute;
+      endMinutes = currentEntry.endTimeMinutes;
+
+      // 다른 일정에 막히는지 체크 (역방향: endMinutes 이전에 끝나는 일정 찾기)
+      startMinutes = scheduleProvider.getMinStartMinutes(
+        date: currentEntry.date,
+        startMinutes: startMinutes,
+        endMinutes: endMinutes,
+        track: currentEntry.track,
+        excludeIndex: _resizingIndex,
       );
-      newEndTime = currentEntry.endTime; // 끝 시간 고정
     } else {
       // 끝 시간선을 조정, 시작 시간 고정
-      newStartTime = currentEntry.startTime; // 시작 시간 고정
-      newEndTime = TimeUtils.getTimeFromOffset(
-        currentY,
-        AppSizes.hourHeight,
+      startMinutes = currentEntry.startTimeMinutes;
+      final draggedTime = TimeUtils.getTimeFromOffset(currentY, AppSizes.hourHeight);
+      endMinutes = draggedTime.hour * 60 + draggedTime.minute;
+      if (draggedTime.hour == 0 && draggedTime.minute == 0) endMinutes = 24 * 60;
+
+      // 다른 일정에 막히는지 체크
+      endMinutes = scheduleProvider.getMaxEndMinutes(
+        date: currentEntry.date,
+        startMinutes: startMinutes,
+        endMinutes: endMinutes,
+        track: currentEntry.track,
+        excludeIndex: _resizingIndex,
       );
     }
 
     // 최소 30분 검증
-    final startMinutes = newStartTime.hour * 60 + newStartTime.minute;
-    var endMinutes = newEndTime.hour * 60 + newEndTime.minute;
-    if (newEndTime.hour == 0 && newEndTime.minute == 0) endMinutes = 24 * 60;
-
     if (endMinutes - startMinutes < 30) return;
 
     // Provider를 통해 일정 업데이트
     scheduleProvider.updateSchedule(
       _resizingIndex,
       ScheduleEntry(
-        startTime: newStartTime,
-        endTime: newEndTime,
+        date: currentEntry.date,
+        startTime: TimeOfDay(hour: startMinutes ~/ 60, minute: startMinutes % 60),
+        endTime: TimeOfDay(hour: endMinutes ~/ 60, minute: endMinutes % 60),
         track: currentEntry.track,
         category: currentEntry.category,
       ),
@@ -470,13 +482,41 @@ class _HomePageState extends State<HomePage> {
 
     _dragEndTime = TimeUtils.getTimeFromOffset(details.localPosition.dy, AppSizes.hourHeight);
 
+    final scheduleProvider = context.read<ScheduleProvider>();
     final startTimeInMinutes = _dragStartTime!.hour * 60 + _dragStartTime!.minute;
-    final endTimeInMinutes = _dragEndTime!.hour * 60 + _dragEndTime!.minute;
+    var endTimeInMinutes = _dragEndTime!.hour * 60 + _dragEndTime!.minute;
+
+    // 시작/끝 정렬
+    int actualStart, actualEnd;
+    if (startTimeInMinutes < endTimeInMinutes) {
+      actualStart = startTimeInMinutes;
+      actualEnd = endTimeInMinutes;
+
+      // 다른 일정에 막히는지 체크
+      actualEnd = scheduleProvider.getMaxEndMinutes(
+        date: DateTime.now(),
+        startMinutes: actualStart,
+        endMinutes: actualEnd,
+        track: _selectedTrack,
+      );
+    } else {
+      // 역방향 드래그
+      actualStart = endTimeInMinutes;
+      actualEnd = startTimeInMinutes;
+
+      // 다른 일정에 막히는지 체크
+      actualStart = scheduleProvider.getMinStartMinutes(
+        date: DateTime.now(),
+        startMinutes: actualStart,
+        endMinutes: actualEnd,
+        track: _selectedTrack,
+      );
+    }
 
     setState(() {
       _previewEntry = ScheduleEntry(
-        startTime: startTimeInMinutes < endTimeInMinutes ? _dragStartTime! : _dragEndTime!,
-        endTime: startTimeInMinutes < endTimeInMinutes ? _dragEndTime! : _dragStartTime!,
+        startTime: TimeOfDay(hour: actualStart ~/ 60, minute: actualStart % 60),
+        endTime: TimeOfDay(hour: actualEnd ~/ 60, minute: actualEnd % 60),
         track: _selectedTrack,
         category: _previewEntry!.category,
       );

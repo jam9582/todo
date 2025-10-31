@@ -127,4 +127,69 @@ class ScheduleProvider extends ChangeNotifier {
   int getTotalMinutes() {
     return getCategoryTimes().values.fold(0, (sum, time) => sum + time);
   }
+
+  /// 드래그 시 가능한 최대 종료 시간 찾기
+  /// 같은 날짜, 같은 트랙에서 startMinutes 이후에 시작하는 가장 가까운 일정의 시작 시간을 반환
+  /// 반환값: 다른 일정에 막히면 그 일정의 시작 시간, 막히지 않으면 원래 endMinutes
+  int getMaxEndMinutes({
+    required DateTime date,
+    required int startMinutes,
+    required int endMinutes,
+    required int track,
+    int? excludeIndex,
+  }) {
+    int maxEnd = endMinutes;
+
+    // 같은 날짜, 같은 트랙의 일정들 순회
+    for (int i = 0; i < _schedules.length; i++) {
+      // 수정 중인 일정은 제외
+      if (excludeIndex != null && i == excludeIndex) continue;
+
+      final schedule = _schedules[i];
+
+      // 같은 날짜, 같은 트랙이 아니면 스킵
+      if (!schedule.isSameDate(date) || schedule.track != track) continue;
+
+      final existingStart = schedule.startTimeMinutes;
+
+      // startMinutes 이후에 시작하는 일정 중 가장 가까운 것
+      if (existingStart > startMinutes && existingStart < maxEnd) {
+        maxEnd = existingStart;
+      }
+    }
+
+    return maxEnd;
+  }
+
+  /// 드래그 시 가능한 최소 시작 시간 찾기 (역방향 드래그용)
+  /// 같은 날짜, 같은 트랙에서 endMinutes 이전에 끝나는 가장 가까운 일정의 종료 시간을 반환
+  int getMinStartMinutes({
+    required DateTime date,
+    required int startMinutes,
+    required int endMinutes,
+    required int track,
+    int? excludeIndex,
+  }) {
+    int minStart = startMinutes;
+
+    // 같은 날짜, 같은 트랙의 일정들 순회
+    for (int i = 0; i < _schedules.length; i++) {
+      // 수정 중인 일정은 제외
+      if (excludeIndex != null && i == excludeIndex) continue;
+
+      final schedule = _schedules[i];
+
+      // 같은 날짜, 같은 트랙이 아니면 스킵
+      if (!schedule.isSameDate(date) || schedule.track != track) continue;
+
+      final existingEnd = schedule.endTimeMinutes;
+
+      // endMinutes 이전에 끝나는 일정 중 가장 가까운 것
+      if (existingEnd < endMinutes && existingEnd > minStart) {
+        minStart = existingEnd;
+      }
+    }
+
+    return minStart;
+  }
 }
