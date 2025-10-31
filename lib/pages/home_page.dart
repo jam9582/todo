@@ -60,10 +60,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final leftWidth = screenWidth * 2 / 5; // 왼쪽 2/5
-    final rightWidth = screenWidth * 3 / 5; // 오른쪽 3/5
-
     // Provider에서 데이터 가져오기
     final scheduleProvider = context.watch<ScheduleProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
@@ -85,95 +81,104 @@ class _HomePageState extends State<HomePage> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. 왼쪽 1/3: 스크롤 가능한 타임라인 & 블록 영역
-          Container(
-            width: leftWidth,
-            color: AppColors.background,
-            child: Stack(
-              children: [
-                // 스크롤 가능한 타임라인
-                SingleChildScrollView(
-                  child: SizedBox(
-                    // 24시간 * 시간당 높이 = 총 스크롤 높이
-                    height: 24 * AppSizes.hourHeight,
-                    child: Stack(
-                      key: _timelineStackKey,
-                      children: [
-                        // 1. 배경 (시간, 점선) -> CustomPaint
-                        CustomPaint(
-                          size: Size(leftWidth, 24 * AppSizes.hourHeight),
-                          painter: TimelinePainter(
-                            hourHeight: AppSizes.hourHeight,
-                            timelineWidth: AppSizes.timelineWidth,
-                            totalWidth: leftWidth,
-                            context: context,
-                          ),
+          // 1. 왼쪽 2/5: 스크롤 가능한 타임라인 & 블록 영역
+          Expanded(
+            flex: 2, // 2/5 비율
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final leftWidth = constraints.maxWidth;
+
+                return Container(
+                  color: AppColors.background,
+                  child: Stack(
+                    children: [
+                    // 스크롤 가능한 타임라인
+                    SingleChildScrollView(
+                      child: SizedBox(
+                        // 24시간 * 시간당 높이 = 총 스크롤 높이
+                        height: 24 * AppSizes.hourHeight,
+                        child: Stack(
+                          key: _timelineStackKey,
+                          children: [
+                            // 1. 배경 (시간, 점선) -> CustomPaint
+                            CustomPaint(
+                              size: Size(leftWidth, 24 * AppSizes.hourHeight),
+                              painter: TimelinePainter(
+                                hourHeight: AppSizes.hourHeight,
+                                timelineWidth: AppSizes.timelineWidth,
+                                totalWidth: leftWidth,
+                                context: context,
+                              ),
+                            ),
+
+                            // 2. 저장된 일정 블록들
+                            ...schedules.asMap().entries.map((mapEntry) {
+                              final index = mapEntry.key;
+                              final entry = mapEntry.value;
+                              return ScheduleBlock(
+                                entry: entry,
+                                isEditMode: _isEditMode,
+                                hourHeight: AppSizes.hourHeight,
+                                timelineWidth: AppSizes.timelineWidth,
+                                totalWidth: leftWidth,
+                                isResizing: _resizingIndex == index,
+                                onTap: () => _deleteSchedule(entry),
+                                onLongPressStart: (details) => _onBlockLongPressStart(index, details),
+                                onLongPressMoveUpdate: (details) => _onBlockLongPressMoveUpdate(details),
+                                onLongPressEnd: (details) => _onBlockLongPressEnd(),
+                              );
+                            }),
+
+                            // 3. 드래그 중인 임시 블록
+                            if (_previewEntry != null)
+                              ScheduleBlock(
+                                entry: _previewEntry!,
+                                isPreview: true,
+                                isEditMode: _isEditMode,
+                                hourHeight: AppSizes.hourHeight,
+                                timelineWidth: AppSizes.timelineWidth,
+                                totalWidth: leftWidth,
+                              ),
+
+                            // 4. 드래그를 감지할 제스처 영역 (편집 모드일 때만)
+                            // 트랙 0 (왼쪽)
+                            if (_isEditMode) _buildTrackGestureDetector(0, leftWidth),
+                            // 트랙 1 (오른쪽)
+                            if (_isEditMode) _buildTrackGestureDetector(1, leftWidth),
+                          ],
                         ),
-
-                        // 2. 저장된 일정 블록들
-                        ...schedules.asMap().entries.map((mapEntry) {
-                          final index = mapEntry.key;
-                          final entry = mapEntry.value;
-                          return ScheduleBlock(
-                            entry: entry,
-                            isEditMode: _isEditMode,
-                            hourHeight: AppSizes.hourHeight,
-                            timelineWidth: AppSizes.timelineWidth,
-                            totalWidth: leftWidth,
-                            isResizing: _resizingIndex == index,
-                            onTap: () => _deleteSchedule(entry),
-                            onLongPressStart: (details) => _onBlockLongPressStart(index, details),
-                            onLongPressMoveUpdate: (details) => _onBlockLongPressMoveUpdate(details),
-                            onLongPressEnd: (details) => _onBlockLongPressEnd(),
-                          );
-                        }),
-
-                        // 3. 드래그 중인 임시 블록
-                        if (_previewEntry != null)
-                          ScheduleBlock(
-                            entry: _previewEntry!,
-                            isPreview: true,
-                            isEditMode: _isEditMode,
-                            hourHeight: AppSizes.hourHeight,
-                            timelineWidth: AppSizes.timelineWidth,
-                            totalWidth: leftWidth,
-                          ),
-
-                        // 4. 드래그를 감지할 제스처 영역 (편집 모드일 때만)
-                        // 트랙 0 (왼쪽)
-                        if (_isEditMode) _buildTrackGestureDetector(0, leftWidth),
-                        // 트랙 1 (오른쪽)
-                        if (_isEditMode) _buildTrackGestureDetector(1, leftWidth),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-                // + 버튼 (플로팅)
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: FloatingActionButton(
-                    onPressed: () {
-                      setState(() {
-                        _isEditMode = !_isEditMode;
-                      });
-                    },
-                    backgroundColor: _isEditMode ? AppColors.lightBrown : AppColors.primaryBrown,
-                    child: Icon(
-                      _isEditMode ? Icons.check : Icons.add,
-                      color: AppColors.background,
+                    // + 버튼 (플로팅)
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          setState(() {
+                            _isEditMode = !_isEditMode;
+                          });
+                        },
+                        backgroundColor: _isEditMode ? AppColors.lightBrown : AppColors.primaryBrown,
+                        child: Icon(
+                          _isEditMode ? Icons.check : Icons.add,
+                          color: AppColors.background,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
-          // 2. 오른쪽 2/3 영역
-          Container(
-            width: rightWidth,
-            color: AppColors.background,
-            child: Column(
-              children: [
+          ),
+          // 2. 오른쪽 3/5 영역
+          Expanded(
+            flex: 3, // 3/5 비율
+            child: Container(
+              color: AppColors.background,
+              child: Column(
+                children: [
                 // 오른쪽 상단: 루틴 체크리스트
                 Expanded(
                   flex: 1,
@@ -263,6 +268,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
+          ),
           ),
         ],
       ),
