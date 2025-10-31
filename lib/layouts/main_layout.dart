@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../pages/home_page.dart';
 import '../pages/calendar_page.dart';
 import '../pages/statistics_page.dart';
-import '../pages/my_page.dart';
+import '../pages/mypage_page.dart';
 import 'bottom_navigation_bar.dart';
 import '../utils/constants.dart';
 
