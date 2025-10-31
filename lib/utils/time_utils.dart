@@ -10,9 +10,16 @@ class TimeUtils {
 
     int snappedMinutes = (totalMinutes / 30).round() * 30;
     snappedMinutes = math.max(0, snappedMinutes);
+    snappedMinutes = math.min(24 * 60, snappedMinutes); // 최대 24:00 (1440분)
 
-    int hour = (snappedMinutes ~/ 60) % 24;
+    int hour = snappedMinutes ~/ 60;
     int minute = snappedMinutes % 60;
+
+    // 24:00인 경우 00:00으로 표현 (내부적으로는 1440분으로 처리)
+    if (hour >= 24) {
+      hour = 0;
+      minute = 0;
+    }
 
     return TimeOfDay(hour: hour, minute: minute);
   }

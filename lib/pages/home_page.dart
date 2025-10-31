@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
                     // + 버튼 (플로팅)
                     Positioned(
                       bottom: 16,
-                      right: 16,
+                      left: 16,
                       child: FloatingActionButton(
                         onPressed: () {
                           setState(() {
@@ -488,6 +488,11 @@ class _HomePageState extends State<HomePage> {
     final scheduleProvider = context.read<ScheduleProvider>();
     final startTimeInMinutes = _dragStartTime!.hour * 60 + _dragStartTime!.minute;
     var endTimeInMinutes = _dragEndTime!.hour * 60 + _dragEndTime!.minute;
+
+    // 00:00은 24:00(1440분)으로 처리
+    if (_dragEndTime!.hour == 0 && _dragEndTime!.minute == 0) {
+      endTimeInMinutes = 24 * 60;
+    }
 
     // 시작/끝 정렬
     int actualStart, actualEnd;
