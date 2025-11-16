@@ -172,6 +172,32 @@ class _HomePageState extends State<HomePage> {
               color: AppColors.background,
               child: Column(
                 children: [
+                // 날짜 표시 영역
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryBrown.withValues(alpha: 0.1),
+                    border: Border(
+                      left: BorderSide(
+                        color: AppColors.primaryBrown.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                      bottom: BorderSide(
+                        color: AppColors.primaryBrown.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    _formatDate(DateTime.now()),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                ),
                 // 오른쪽 상단: 루틴 체크리스트
                 Expanded(
                   flex: 1,
@@ -266,6 +292,15 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  // --- 헬퍼 메서드 ---
+
+  /// 날짜를 "YYYY년 M월 d일 (요일)" 형식으로 포맷
+  String _formatDate(DateTime date) {
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    final weekday = weekdays[date.weekday - 1];
+    return '${date.year}년 ${date.month}월 ${date.day}일 ($weekday)';
   }
 
   // --- 위젯 빌더 ---
