@@ -84,14 +84,12 @@ class _HomePageState extends State<HomePage> {
                     children: [
                     // 스크롤 가능한 타임라인
                     SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 20), // 00시 텍스트가 잘리지 않도록
-                        child: SizedBox(
-                          // 24시간 * 시간당 높이 = 총 스크롤 높이
-                          height: 24 * AppSizes.hourHeight,
-                          child: Stack(
-                            key: _timelineStackKey,
-                            children: [
+                      child: SizedBox(
+                        // 24시간 * 시간당 높이 = 총 스크롤 높이
+                        height: 24 * AppSizes.hourHeight,
+                        child: Stack(
+                          key: _timelineStackKey,
+                          children: [
                             // 1. 배경 (시간, 점선) -> CustomPaint
                             CustomPaint(
                               size: Size(leftWidth, 24 * AppSizes.hourHeight),
@@ -140,7 +138,6 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                      ), // Padding 닫기
                     ), // SingleChildScrollView 닫기
                     // + 버튼 (플로팅)
                     Positioned(
@@ -524,14 +521,14 @@ class _HomePageState extends State<HomePage> {
     final startTimeInMinutes = _dragStartTime!.hour * 60 + _dragStartTime!.minute;
     var endTimeInMinutes = _dragEndTime!.hour * 60 + _dragEndTime!.minute;
 
-    // 00:00은 24:00(1440분)으로 처리
-    if (_dragEndTime!.hour == 0 && _dragEndTime!.minute == 0) {
-      endTimeInMinutes = 24 * 60;
-    }
-
     // 시작/끝 정렬
     int actualStart, actualEnd;
-    if (startTimeInMinutes < endTimeInMinutes) {
+    if (startTimeInMinutes <= endTimeInMinutes) {
+      // 정방향 드래그 (아래로)
+      // 00:00을 끝점으로 사용하는 경우만 24:00으로 처리
+      if (_dragEndTime!.hour == 0 && _dragEndTime!.minute == 0 && endTimeInMinutes == 0) {
+        endTimeInMinutes = 24 * 60;
+      }
       actualStart = startTimeInMinutes;
       actualEnd = endTimeInMinutes;
 
