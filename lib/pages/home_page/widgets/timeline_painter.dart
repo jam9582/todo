@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
+import '../../../utils/constants.dart';
 
 /// 타임라인 배경을 그리는 CustomPainter
 class TimelinePainter extends CustomPainter {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../models/activity_category.dart';
-import '../../models/schedule_entry.dart';
-import '../../utils/constants.dart';
-import '../../utils/time_utils.dart';
+import '../../../models/activity_category.dart';
+import '../../../models/schedule_entry.dart';
+import '../../../utils/constants.dart';
+import '../../../utils/time_utils.dart';
 
 /// 카테고리별 시간 통계 패널
 class StatisticsPanel extends StatelessWidget {

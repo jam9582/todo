@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/schedule_provider.dart';
-import '../providers/category_provider.dart';
-import '../utils/constants.dart';
-import '../utils/time_utils.dart';
+import '../../providers/schedule_provider.dart';
+import '../../providers/category_provider.dart';
+import '../../utils/constants.dart';
+import '../../utils/time_utils.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});

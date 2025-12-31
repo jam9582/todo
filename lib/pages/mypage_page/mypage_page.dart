@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/constants.dart';
+import '../../utils/constants.dart';
 
 /// 마이페이지 (사용자 프로필 및 설정)
 class MyPage extends StatelessWidget {

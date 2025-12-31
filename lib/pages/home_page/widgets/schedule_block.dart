@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/schedule_entry.dart';
-import '../../utils/constants.dart';
+import '../../../models/schedule_entry.dart';
+import '../../../utils/constants.dart';
 
 /// 일정 블록 위젯
 class ScheduleBlock extends StatelessWidget {

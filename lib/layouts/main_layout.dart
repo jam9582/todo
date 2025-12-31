@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../pages/home_page.dart';
-import '../pages/calendar_page.dart';
-import '../pages/statistics_page.dart';
-import '../pages/mypage_page.dart';
+import '../pages/home_page/home_page.dart';
+import '../pages/calendar_page/calendar_page.dart';
+import '../pages/statistics_page/statistics_page.dart';
+import '../pages/mypage_page/mypage_page.dart';
 import 'bottom_navigation_bar.dart';
 import '../utils/constants.dart';
 

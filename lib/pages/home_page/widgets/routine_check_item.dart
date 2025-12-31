@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
+import '../../../utils/constants.dart';
 
 /// 루틴 체크 아이템 위젯
 class RoutineCheckItem extends StatelessWidget {
