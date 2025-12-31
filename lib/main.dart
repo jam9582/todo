@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:device_preview/device_preview.dart';
 import 'layouts/main_layout.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/category_provider.dart';
@@ -13,7 +15,13 @@ void main() async {
   // Hive 초기화 (StorageService에서 Box 열기 및 Adapter 등록)
   await StorageService.init();
 
-  runApp(const ProtoApp());
+  runApp(
+    DevicePreview(
+      // 개발 모드(디버그/프로파일)에서만 활성화, 릴리즈(프로덕션) 빌드에서는 비활성화
+      enabled: !kReleaseMode,
+      builder: (context) => const ProtoApp(),
+    ),
+  );
 }
 
 class ProtoApp extends StatelessWidget {
@@ -27,6 +35,10 @@ class ProtoApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
       ],
       child: MaterialApp(
+        // Device Preview 설정
+        locale: DevicePreview.locale(context),
+        builder: DevicePreview.appBuilder,
+
         title: '하루 일과',
         theme: ThemeData(
           primarySwatch: Colors.brown,
@@ -34,24 +46,7 @@ class ProtoApp extends StatelessWidget {
           scaffoldBackgroundColor: AppColors.background,
         ),
         debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          // '가상 폰'을 보여주기 위한 바깥 배경
-          backgroundColor: Colors.grey.shade800,
-          body: Center(
-            // 그림자와 둥근 모서리가 있는 '가상 폰' 프레임
-            child: Material(
-              elevation: 12,
-              borderRadius: BorderRadius.circular(20),
-              clipBehavior: Clip.antiAlias,
-              // 아이폰 규격 (402 x 874)
-              child: const SizedBox(
-                width: 402,
-                height: 874,
-                child: MainLayout(), // 실제 앱 화면
-              ),
-            ),
-          ),
-        ),
+        home: const MainLayout(),
       ),
     );
   }
